@@ -7,6 +7,13 @@
 
 
 ```shell
+sudo apt-get install cmake \
+  libopenblas-dev \
+  liblapack-dev \
+  libjpeg-dev
+```
+
+```shell
 sudo vim /etc/dphys-swapfile
 ```
 change *DCONF_SWAPSIZE=100* to *CONF_SWAPSIZE=1024* and save / exit vim
@@ -16,22 +23,24 @@ sudo /etc/init.d/dphys-swapfile restart
 ```
 
 ```shell
-sudo apt-get install cmake \
-  libopenblas-dev \
-  liblapack-dev \
-  libjpeg-dev
+mkdir -p dlib
+git clone -b 'v19.18' --single-branch https://github.com/davisking/dlib.git dlib/
+cd ./dlib
+sudo python3 setup.py install --compiler-flags "-mfpu=neon"
+```
+
+```shell
+sudo vim /etc/dphys-swapfile
+```
+change *DCONF_SWAPSIZE=1024* to *CONF_SWAPSIZE=100* and save / exit vim
+
+```shell
+sudo /etc/init.d/dphys-swapfile restart
 ```
 
 ```shell
 sudo apt-get install python3-picamera
 sudo pip3 install --upgrade picamera[array]
-```
-
-```shell
-mkdir -p dlib
-git clone -b 'v19.18' --single-branch https://github.com/davisking/dlib.git dlib/
-cd ./dlib
-sudo python3 setup.py install --compiler-flags "-mfpu=neon"
 ```
 
 ```shell
