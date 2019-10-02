@@ -26,7 +26,7 @@ sudo /etc/init.d/dphys-swapfile restart
 mkdir -p dlib
 git clone -b 'v19.18' --single-branch https://github.com/davisking/dlib.git dlib/
 cd ./dlib
-sudo python3 setup.py install --compiler-flags "-mfpu=neon"
+python setup.py install --compiler-flags "-mfpu=neon"
 ```
 
 ```shell
