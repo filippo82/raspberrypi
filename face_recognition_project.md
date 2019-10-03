@@ -30,19 +30,19 @@ python setup.py install --compiler-flags "-mfpu=neon"
 ```
 
 ```shell
+sudo apt-get install python3-picamera
+sudo pip3 install --upgrade picamera[array]
+```
+
+```shell
+pip install face_recognition
+```
+
+```shell
 sudo vim /etc/dphys-swapfile
 ```
 change `DCONF_SWAPSIZE=1024` to `CONF_SWAPSIZE=100` and save / exit vim
 
 ```shell
 sudo /etc/init.d/dphys-swapfile restart
-```
-
-```shell
-sudo apt-get install python3-picamera
-sudo pip3 install --upgrade picamera[array]
-```
-
-```shell
-sudo pip3 install face_recognition
 ```
