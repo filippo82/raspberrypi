@@ -16,7 +16,7 @@ sudo apt-get install cmake \
 ```shell
 sudo vim /etc/dphys-swapfile
 ```
-change *DCONF_SWAPSIZE=100* to *CONF_SWAPSIZE=1024* and save / exit vim
+change `DCONF_SWAPSIZE=100` to `CONF_SWAPSIZE=1024` and save / exit vim
 
 ```shell
 sudo /etc/init.d/dphys-swapfile restart
@@ -32,7 +32,7 @@ python setup.py install --compiler-flags "-mfpu=neon"
 ```shell
 sudo vim /etc/dphys-swapfile
 ```
-change *DCONF_SWAPSIZE=1024* to *CONF_SWAPSIZE=100* and save / exit vim
+change `DCONF_SWAPSIZE=1024` to `CONF_SWAPSIZE=100` and save / exit vim
 
 ```shell
 sudo /etc/init.d/dphys-swapfile restart
