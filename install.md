@@ -7,6 +7,11 @@
 sudo apt-get install vim
 ```
 
+## Set up Github
+git config --global user.email "filippo82@users.noreply.github.com"
+git config --global user.name "Filippo B"
+git config --global core.editor "vim"
+
 ## Download and install Miniconda
 
 ```shell
