@@ -1,4 +1,6 @@
 
+### How to work out missing dependencies
+[Piwheels](https://blog.piwheels.org/how-to-work-out-the-missing-dependencies-for-a-python-package/)
 
 ### Raspbian version
 You can check the release of Raspbian, simply reading the content of the os-release file.

@@ -62,6 +62,7 @@ See [OpenCV file](./opencv_temp.md)
 sudo apt-get install python3-picamera
 sudo pip install --upgrade picamera[array]
 pip install face_recognition
+conda install hdf5=1.8.17
 # conda install opencv # Error
 ```
 

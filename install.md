@@ -4,7 +4,7 @@
 ## Install additional packages
 
 ```shell
-sudo apt-get install vim
+sudo apt-get install vim apt-file
 ```
 
 ## Download and install Miniconda
