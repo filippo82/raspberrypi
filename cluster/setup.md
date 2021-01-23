@@ -87,8 +87,11 @@ dtoverlay=disable-wifi
 dtoverlay=disable-bt
 
 #### user-data
-```
+
+```yaml
+cloud-config
 hostname: kube-node0
+#fqdn: kube-node0.example.com
 
 disable_root: true
 ssh_pwauth: false
@@ -135,6 +138,15 @@ packages:
 
 locale: "en_US.UTF-8"
 timezone: "Europe/Zurich"
+
+#write_files:
+#  - content: |
+#        pi    ALL=(ALL) NOPASSWD: ALL
+#        Defaults:pi    !requiretty
+#    owner: root:root
+#    path: /etc/sudoers.d/pi
+#    permissions: '0444'
+
 ```
 ```
   - sed -i -e '/^Port/s/^.*$/Port 4444/' /etc/ssh/sshd_config
@@ -154,12 +166,13 @@ touch /etc/cloud/cloud-init.disabled
 
 `manage_resolv_conf` [here](https://stackoverflow.com/questions/48736348/using-cloud-init-to-change-resolv-conf)
 
-[](https://blog.hypriot.com/post/cloud-init-cloud-on-hypriot-x64/)
-[](https://www.digitalocean.com/community/tutorials/how-to-use-cloud-config-for-your-initial-server-setup)
-[](https://wiki.archlinux.org/index.php/Cloud-init)
-[](https://serverfault.com/questions/412113/aws-how-to-stop-cloud-init-from-disabling-root-login)
-[](https://www.zetta.io/en/help/articles-tutorials/cloud-init-reference/)
-[](http://www.jedimt.com/2019/12/deploying-k8s-on-raspberry-pi4-with-hypriot-and-cloud-init/)
+Resources:
+* [](https://blog.hypriot.com/post/cloud-init-cloud-on-hypriot-x64/)
+* [](https://www.digitalocean.com/community/tutorials/how-to-use-cloud-config-for-your-initial-server-setup)
+* [](https://wiki.archlinux.org/index.php/Cloud-init)
+* [](https://serverfault.com/questions/412113/aws-how-to-stop-cloud-init-from-disabling-root-login)
+* [](https://www.zetta.io/en/help/articles-tutorials/cloud-init-reference/)
+* [](http://www.jedimt.com/2019/12/deploying-k8s-on-raspberry-pi4-with-hypriot-and-cloud-init/)
 
 #### meta-data
 
@@ -214,6 +227,9 @@ ethernets:
 
 #### Status
 When cloud-init is finished running, it touches the file /var/lib/cloud/instance/boot-finished Checking for its existence is probably the simplest option. If you need to check that cloud-init finished without any error, you can also look at /var/lib/cloud/data/result.json
+Log files:
+* /var/log/cloud-init-output.log
+
 
 ```
 cloud-init status
@@ -226,6 +242,10 @@ Pay attention to hyphens und underscores: [](https://bugzilla.redhat.com/show_bu
 
 Follow the instructions [here](https://www.linuxuprising.com/2019/04/how-to-change-username-on-ubuntu-debian.html)
 to rename `ubuntu` to `pi`.
+
+### GPU memory
+
+Reduce the GPU memory to 16 MB (I set it to the minimum as I’ll likely never connect a display to any of the Pi).
 
 ### Setup master node
 
@@ -255,6 +275,13 @@ On master and nodes, modify `/etc/hosts` by adding the following lines:
 10.0.0.1 kube-master
 10.0.0.10 kube-node0
 10.0.0.11 kube-node1
+```
+or
+```bash
+echo -e "# Kubernetes addresses" | sudo tee -a /etc/hosts
+echo -e "10.0.0.1\tkube-master" | sudo tee -a /etc/hosts
+echo -e "10.0.0.10\tkube-node0" | sudo tee -a /etc/hosts
+echo -e "10.0.0.11\tkube-node1" | sudo tee -a /etc/hosts
 ```
 
 ### Adjust config.txt
