@@ -12,11 +12,11 @@ Open up the disk utility app and erase/format the SD cards using the MS-DOS (FAT
 
 Download a 64bit GNU/Linux OS, such as
 [Ubuntu 19.10](http://cdimage.ubuntu.com/releases/eoan/release/ubuntu-19.10.1-preinstalled-server-arm64+raspi3.img.xz) or
-[Ubuntu 20.04](http://cdimage.ubuntu.com/ubuntu/releases/20.04/release/ubuntu-20.04-preinstalled-server-arm64+raspi.img.xz)
+[Ubuntu 20.04.1 LTS](https://cdimage.ubuntu.com/releases/20.04.1/release/ubuntu-20.04.1-preinstalled-server-arm64+raspi.img.xz)
 and extract the image like so:
 
-```
-$ xz -d ubuntu-19.10.1-preinstalled-server-arm64+raspi3.img.xz
+```shell
+$ xz -d ubuntu-20.04.1-preinstalled-server-arm64+raspi.img.xz
 $ unxz
 ```
 
@@ -26,7 +26,7 @@ dedicated [page](https://ubuntu.com/download/raspberry-pi).
 Now, following these [instructions for macOS](https://ubuntu.com/tutorials/create-an-ubuntu-image-for-a-raspberry-pi-on-macos#1-overview),
 flash the SD card (install the OS, make it bootable):
 
-```
+```shell
 # Identify the SD card
 diskutil list
 ...
@@ -40,7 +40,7 @@ $ diskutil unmountdisk /dev/disk2
 Unmount of all volumes on disk2 was successful
 
 # now, flash the SD card with the OS:
-$ sudo dd if=ubuntu-20.04-preinstalled-server-arm64+raspi.img of=/dev/disk2 bs=8m
+$ sudo dd if=ubuntu-20.04.1-preinstalled-server-arm64+raspi.img of=/dev/disk2 bs=8m
 1485+1 records in
 1485+1 records out
 3115115520 bytes transferred in 126.646778 secs (24596879 bytes/sec)
@@ -57,7 +57,7 @@ $ diskutil eject /dev/disk2
 Disk /dev/disk2 ejected
 ```
 
-### Enable the SSH server (only if using Raspbian)
+### Enable the SSH server (Raspbian only)
 
 SSH is not activated by default in Raspbian.
 If we want to create a headless system (without monitor and keyboard),
@@ -67,26 +67,22 @@ inside the MicroSD card's `/boot` partition.
 We navigate to where the card is mounted (usually `/media`)
 and enter the `boot` partition:
 
-```
+```shell
 touch SSH
 ```
 
-### Cloud init
+### Set up Worker Node (Ubuntu)
 
-#### usercfg.txt
+#### Disable WIFI and Bluetooth
 
-#hdmi_group=2
-#hdmi_mode=82
-#disable_overscan=1
-#overscan_left=100
-#overscan_top=100
-framebuffer_width=1920
-framebuffer_height=1080
-
+```shell
+cat <<EOT >> /boot/firmware/usercfg.txt
 dtoverlay=disable-wifi
 dtoverlay=disable-bt
+EOT
+```
 
-#### user-data
+#### cloud-init: user-data
 
 ```yaml
 cloud-config
@@ -149,8 +145,11 @@ timezone: "Europe/Zurich"
 
 ```
 ```
+runcmd:
   - sed -i -e '/^Port/s/^.*$/Port 4444/' /etc/ssh/sshd_config
   - sed -i -e '/^PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+  - sed -i -e '$aAllowUsers pi' /etc/ssh/sshd_config
+  - restart ssh
 ```
 
 ssh_pwauth: True
@@ -243,10 +242,6 @@ Pay attention to hyphens und underscores: [](https://bugzilla.redhat.com/show_bu
 Follow the instructions [here](https://www.linuxuprising.com/2019/04/how-to-change-username-on-ubuntu-debian.html)
 to rename `ubuntu` to `pi`.
 
-### GPU memory
-
-Reduce the GPU memory to 16 MB (I set it to the minimum as I’ll likely never connect a display to any of the Pi).
-
 ### Setup master node
 
 Log into the Raspberry Pi with username `ubuntu` and password `ubuntu`.
@@ -284,25 +279,26 @@ echo -e "10.0.0.10\tkube-node0" | sudo tee -a /etc/hosts
 echo -e "10.0.0.11\tkube-node1" | sudo tee -a /etc/hosts
 ```
 
-### Adjust config.txt
+### Adjust config.txt (Ubuntu only)
 
-```
+```shell
 sudo vim /boot/firmware/usercfg.txt
 ```
 
 ### Disable swap
 
-```
+```shell
 sudo dphys-swapfile swapoff && \
 sudo dphys-swapfile uninstall && \
 sudo update-rc.d dphys-swapfile remove
 sudo systemctl disable dphys-swapfile
 ```
+
 This should now show no entries:
-```
+
+```shell
 sudo swapon --summary
 ```
-
 
 ###
 
@@ -328,7 +324,7 @@ sudo reboot
 ### Activate WIFI on Ubuntu server?
 WIP
 
-### Static IP for Pi Router on Home Network
+### Static IP for Pi Router on Home Network - Master
 Since I’ll be using this as a jumpbox, I needed a static IP address for it on my home network. I did the following:
 
     Looked up the MAC address for the wlan0 network device.
@@ -351,6 +347,7 @@ Create a file called `01-kube-net-config.yaml` inside `/etc/netplan` with the
 following content:
 
 ```
+# Master
 network:
   version: 2
   renderer: networkd
@@ -358,6 +355,17 @@ network:
     eth0:
       dhcp4: false
       addresses: [10.0.0.1/27]
+```
+
+```
+# Node
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: false
+      addresses: [10.0.0.10/27]
       gateway4: 192.168.1.1
       nameservers:
         addresses: [8.8.8.8, 8.8.4.4]
@@ -403,18 +411,20 @@ nolink
 
 Reboot and check with `ip a`.
 
-### Install and set up dnsmasq
+### Install and set up dnsmasq - Master
 
+* :book: [baking a pi router for my raspberry pi kubernetes cluster](https://downey.io/blog/create-raspberry-pi-3-router-dhcp-server/)
+
+First, install `dnsmasq`:
+
+```shell
+$ sudo apt-get install dnsmasq
 ```
-sudo apt-get install dnsmasq
-```
 
-[](https://downey.io/blog/create-raspberry-pi-3-router-dhcp-server/)
+Then, create a new configuration file for `dnsmasq`:
 
-Make a new configuration file for dnsmasq
-sudo vim /etc/dnsmasq.conf
-
-```
+```shell
+sudo bash -c 'cat > /etc/dnsmasq.conf' <<'EOF'
 # Our DHCP service will be providing addresses over our eth0 adapter
 interface=eth0
 
@@ -451,37 +461,50 @@ expand-hosts
 # Useful for debugging issues
 # log-queries
 # log-dhcp
+EOF
 ```
 
-If everything went as planned, you should be able to validate that dnsmasq is running by doing:
+Replace `MAC_ADDRESS_NODE0` with the appropriate MAC address.
 
+If everything went as planned, you should be able to validate that `dnsmasq` is running by executing:
+
+```shell
+sudo systemctl status dnsmasq
 ```
-sudo service dnsmasq status
+
+If something looks wrong, restart `dnsmasq:
+
+```shell
+sudo systemctl restart dnsmasq
 ```
 
-### Forward Internet from WiFi (wlan0) to Ethernet (eth0)
+### Forward Internet from WiFi (wlan0) to Ethernet (eth0) - Master
 
-We need to make sure that the nodes in the cluster network are able to access the outside internet,
-so the next is to set up some internet forwarding.
+We need to make sure that the nodes in the cluster network are able to access the outside internet.
+Hence, the next setup is to set up internet forwarding through the master node.
 
-First edit `/etc/sysctl.conf` and uncomment the following line:
-```
+First, edit `/etc/sysctl.conf` and uncomment the following line:
+
+```shell
 net.ipv4.ip_forward=1
 ```
-You should then reboot the server for this to take effect.
-Alternately you can run `sudo sysctl net.ipv4.ip_forward=1`
+
+You should then reboot the master node for this to take effect.
+Alternately, you can run `sudo sysctl net.ipv4.ip_forward=1`
 to make the change without rebooting. If you choose to do this you will
 still want to edit `/etc/sysctl.conf` to make the setting permanent.
 
 You then add the following iptables rules:
-```
+
+```shell
 sudo iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
 sudo iptables -A FORWARD -i wlan0 -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT
 sudo iptables -A FORWARD -i eth0 -o wlan0 -j ACCEPT
 ```
 
 After all this, the iptables rules should look like the following:
-```
+
+```shell
 sudo iptables -L -n -v
 
 Chain INPUT (policy ACCEPT 12 packets, 870 bytes)
@@ -496,52 +519,67 @@ Chain OUTPUT (policy ACCEPT 6 packets, 1080 bytes)
  pkts bytes target     prot opt in     out     source               destination
 ```
 
-I wanted to make sure these rules survived across reboots, so I installed a package called iptables-persistent:
+We wanted to make sure hat these rules survive across reboots.
+Hence, we install a package called `iptables-persistent`:
 
-```
+```shell
 sudo apt install iptables-persistent
 ```
+
 As part of the installation process, choose `yes` when asked
 to save the current rules to `/etc/iptables/rules.v4`.
-
-After all of this, reboot again and sshed in again.
+Finally, reboot the master node again.
 
 ### Testing It All Out
 
-After all of this, I plugged the Pi Router into the switch with all of my clustered Pis. I turned the switch on and off again to force them all to try and reacquire a new DHCP lease and then ran the following on the Pi Router to see if any DHCP leases were granted:
-```
+After all of this, I plugged the Pi Router into the switch with all of my clustered Pis. I turned the switch off and on again to force them all to try and reacquire a new DHCP lease and then ran the following on the Pi Router to see if any DHCP leases were granted:
+
+```shell
 cat /var/lib/misc/dnsmasq.leases
 ```
-Yep, they were all there! Since I added expand-hosts to the dnsmasq.conf configuration, I was able to ssh on to them by hostname like this:
-```
+
+Yep, they were all there! 
+
+Since we added `expand-hosts` to the `dnsmasq.conf` configuration, we are now able to ssh into the worker nodes by hostname like this:
+
+```shell
 ssh pi@kube-node1
 ```
+
 I executed a few curl commands (e.g. curl http://example.com) to confirm that they had internet access and everything worked wonderfully! Additionally, from within blathers I was able to ssh pi@nook to confirm that the clustered Pis could communicate with each other.
 
-### Set Up Keyless SSH Access Between Hosts
+### Set Up Keyless SSH Access Between Nodes
 
 On each node (master and workers), generate a private/public key pair:
-```
+
+```shell
 ssh-keygen -b 2048 -t rsa -f ~/.ssh/id_rsa -q -N ""
 ```
+
 For example, after generating a private/public key pair on the master node,
 transfer the public key to a worker node:
-```
+
+```shell
 ssh-copy-id -i ~/.ssh/id_rsa.pub pi@kube-node1
 ```
+
 Then test it by logging into `kube-node1` from the master node.
 
-
 Next we are going to remove the ability to SSH in with just your password.
-```
+
+```shell
 vim /etc/ssh/sshd_config
 ```
+
 Find this in the file:
-```
+
+```shell
 PasswordAuthentication yes
 ```
+
 Change it to:
-```
+
+```shell
 PasswordAuthentication no
 ```
 
@@ -555,36 +593,69 @@ Open the `/boot/config.txt` file and find the following line:
 ```
 
 And add this line under it:
+
 ```
 dtoverlay=disable-wifi
 ```
+
 You can also add:
+
 ```
 dtoverlay=disable-bt
 ```
+
 to disable bluetooth.
+
+#### Ubuntu
+
+Open the `/boot/firmware/usercfg.txt` file and find the following line:
+```
+# Additional overlays and parameters are documented /boot/overlays/README
+```
+
+And add this line under it:
+
+```
+dtoverlay=disable-wifi
+```
+
+You can also add:
+
+```
+dtoverlay=disable-bt
+```
+
+to disable bluetooth.
+
+### GPU Memory
+
+Reduce the GPU memory to 16 MB (I set it to the minimum as I’ll likely never connect a display to any of the Pi).
+
+Open the `/boot/config.txt` file and set `gpu_mem=16`
 
 ### Memory cgroups
 
 We need to enable container features in the kernel in order to run containers.
 
 #### Ubuntu
-for Ubuntu 19.10, we need to manually enable memory cgroups. To achieve this, execute the following command:
 
-```
+For Ubuntu 19.10, we need to manually enable memory cgroups. To achieve this, execute the following command:
+
+```shell
 sudo sed -i '$ s/$/ cgroup_enable=memory cgroup_memory=1/' /boot/firmware/nobtcmd.txt
 ```
-#### Raspbian
-for Raspbian, we need to manually enable memory cgroups. To achieve this, execute the following command:
 
-```
+#### Raspbian
+
+For Raspbian, we need to manually enable memory cgroups. To achieve this, execute the following command:
+
+```shell
 sudo sed -i '$ s/$/ cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1/' /boot/cmdline.txt
 ```
 
-
 ### Install Docker on master node (not required with k3s)
 
-```
+```shell
 curl -sSL get.docker.com | sh
 ```
 
