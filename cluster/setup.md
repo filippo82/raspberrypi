@@ -17,7 +17,6 @@ and extract the image like so:
 
 ```shell
 $ xz -d ubuntu-20.04.1-preinstalled-server-arm64+raspi.img.xz
-$ unxz
 ```
 
 You can read more about Ubuntu and Raspberry Pi on this
@@ -82,20 +81,45 @@ dtoverlay=disable-bt
 EOT
 ```
 
-#### cloud-init: user-data
+#### cloud-init
+
+Resources :book:
+* [Bootstrapping a Cloud with Cloud-Init and HypriotOS](https://blog.hypriot.com/post/cloud-init-cloud-on-hypriot-x64/)
+* [How To Use Cloud-Config For Your Initial Server Setup](https://www.digitalocean.com/community/tutorials/how-to-use-cloud-config-for-your-initial-server-setup)
+* [AWS: how to stop cloud-init from disabling root login](https://serverfault.com/questions/412113/aws-how-to-stop-cloud-init-from-disabling-root-login)
+* [Cloud-Init Reference](https://www.zetta.io/en/help/articles-tutorials/cloud-init-reference/)
+* [Deploying K8s on Raspberry Pi4 with Hypriot and Cloud-Init](http://www.jedimt.com/2019/12/deploying-k8s-on-raspberry-pi4-with-hypriot-and-cloud-init/)
+
+##### meta-data
 
 ```yaml
-cloud-config
+instance-id: pi-cluster
+```
+
+##### network-config (probably not necessary)
+
+:book: [Netplan reference](https://netplan.io/reference/#common-properties-for-all-device-types).
+
+```yaml
+version: 2
+renderer: networkd
+ethernets:
+  eth0:
+    dhcp4: true
+```
+
+`renderer: networkd` is probably not necessary because `networkd` is the default value.
+
+##### user-data
+
+```yaml
+#cloud-config
+
 hostname: kube-node0
 #fqdn: kube-node0.example.com
 
 disable_root: true
-ssh_pwauth: false
-
-#chpasswd:
-#  expire: true
-#  list:
-#  - pi:raspberry
+ssh_pwauth: no
 
 groups:
   - pi
@@ -135,25 +159,22 @@ packages:
 locale: "en_US.UTF-8"
 timezone: "Europe/Zurich"
 
-#write_files:
-#  - content: |
-#        pi    ALL=(ALL) NOPASSWD: ALL
-#        Defaults:pi    !requiretty
-#    owner: root:root
-#    path: /etc/sudoers.d/pi
-#    permissions: '0444'
-
-```
-```
 runcmd:
   - sed -i -e '/^Port/s/^.*$/Port 4444/' /etc/ssh/sshd_config
   - sed -i -e '/^PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
   - sed -i -e '$aAllowUsers pi' /etc/ssh/sshd_config
   - restart ssh
+
+final_message: "The system is finally up at $TIMESTAMP, after $UPTIME seconds"
 ```
 
-ssh_pwauth: True
+Other options:
+
+```yaml
 disable_root_opts: no-port-forwarding,no-agent-forwarding,no-X11-forwarding,command="echo 'Please login as the user \"$USER\" rather than the user \"root\".';echo;sleep 10"
+runcmd:
+  - sed -i -e '/^Port/s/^.*$/Port 4444/' /etc/ssh/sshd_config
+```
 
 Automatically discover the best ntp_client
 ntp_client: auto
@@ -165,76 +186,19 @@ touch /etc/cloud/cloud-init.disabled
 
 `manage_resolv_conf` [here](https://stackoverflow.com/questions/48736348/using-cloud-init-to-change-resolv-conf)
 
-Resources:
-* [](https://blog.hypriot.com/post/cloud-init-cloud-on-hypriot-x64/)
-* [](https://www.digitalocean.com/community/tutorials/how-to-use-cloud-config-for-your-initial-server-setup)
-* [](https://wiki.archlinux.org/index.php/Cloud-init)
-* [](https://serverfault.com/questions/412113/aws-how-to-stop-cloud-init-from-disabling-root-login)
-* [](https://www.zetta.io/en/help/articles-tutorials/cloud-init-reference/)
-* [](http://www.jedimt.com/2019/12/deploying-k8s-on-raspberry-pi4-with-hypriot-and-cloud-init/)
-
-#### meta-data
-
-```
-#instance-id: KubeNode0
-#local-hostname: kube-node0
-#hostname: kube-node0
-
-```
-
-#### network-config (not necessary)
-
-```
-version: 2
-renderer: networkd
-ethernets:
-  eth0:
-    dhcp4: true
-```
-
-<!-- ```
-version: 2
-renderer: networkd
-ethernets:
-  eth0:
-    dhcp4: false
-    addresses: [10.0.0.10/27]
-```
-
-```
-network:
-  version: 2
-  renderer: networkd
-  ethernets:
-    eth0:
-      dhcp4: false
-      addresses: [10.0.0.1/27]
-```
-
-Other:
-```
-version: 2
-ethernets:
-  interface0:
-    match:
-      mac_address: "52:54:00:12:34:00"
-    set-name: interface0
-    addresses:
-      - 192.168.1.10/255.255.255.0
-    gateway4: 192.168.1.254
-``` -->
-
-#### Status
+##### Status
 When cloud-init is finished running, it touches the file /var/lib/cloud/instance/boot-finished Checking for its existence is probably the simplest option. If you need to check that cloud-init finished without any error, you can also look at /var/lib/cloud/data/result.json
 Log files:
+* /var/log/cloud-init.log
 * /var/log/cloud-init-output.log
 
 
-```
+```shell
 cloud-init status
 ```
 
-#### Note
+##### Note
+
 Pay attention to hyphens und underscores: [](https://bugzilla.redhat.com/show_bug.cgi?id=1786350).
 
 ### Rename username (for Ubuntu only)
@@ -286,6 +250,9 @@ sudo vim /boot/firmware/usercfg.txt
 ```
 
 ### Disable swap
+
+This is an official requirement for Kubernetes to run:
+
 
 ```shell
 sudo dphys-swapfile swapoff && \
