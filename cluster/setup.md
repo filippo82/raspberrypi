@@ -725,3 +725,32 @@ To install Node.js v14.x, execute these
 curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
+
+## Set up host (macOS)
+
+Add `kube-master` to `/etc/hosts`:
+
+```bash
+echo -e "# Raspberry Pi cluster" | sudo tee -a /etc/hosts
+echo -e "192.128.1.181\tkube-master" | sudo tee -a /etc/hosts
+```
+
+```shell
+ssh-keygen -b 2048 -t rsa -f ~/.ssh/rpicluster -q -N ""
+```
+
+```shell
+ssh-copy-id -i ~/.ssh/rpicluster.pub pi@kube-master
+```
+
+```shell
+bash -c 'cat >> ~/.ssh/config' <<'EOT'
+# Raspberry Pi Cluster
+Host km
+    HostName 192.168.1.181
+    User pi
+    UseKeychain yes
+    AddKeysToAgent yes
+    IdentityFile ~/.ssh/rpicluster
+EOT
+```
