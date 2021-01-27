@@ -632,6 +632,10 @@ curl -sSL get.docker.com | sh
 curl -sfL https://get.k3s.io | sh -
 ```
 
+```shell
+curl -sfL https://get.k3s.io | sh -s - --bind-address 10.0.0.1
+```
+
 Now check if all is well, you should see something like the following:
 ```
 sudo kubectl version
