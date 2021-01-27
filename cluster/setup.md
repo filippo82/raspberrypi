@@ -668,6 +668,12 @@ ssh pi@kube-node1 "curl -sfL http://get.k3s.io | K3S_URL=https://10.0.0.1:6443 K
 ```
 where `10.0.0.1` is the IP address of the master node.
 
+### Upgrade k3s
+
+```shell
+curl -sfL https://get.k3s.io | sh -
+```
+
 ### Connect remotely to the cluster
 
 If you don't want to connect via SSH to a node every time you need to query your cluster, it is possible to install `kubectl` (k8s command line tool) on your local machine and control remotely your cluster.
@@ -688,6 +694,10 @@ For security purpose, limit the file's read/write permissions to just yourself:
 ```
 chmod 600 ~/.kube/config
 ```
+
+### Install Kubernetes Dashboard
+
+Follow instructions [here](https://rancher.com/docs/k3s/latest/en/installation/kube-dashboard/)
 
 ### Install Helm
 
