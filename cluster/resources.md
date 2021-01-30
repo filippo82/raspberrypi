@@ -9,9 +9,10 @@ series of four articles
 * [Setting up a Kubernetes 1.11 Raspberry Pi Cluster using kubeadm](https://kubecloud.io/setting-up-a-kubernetes-1-11-raspberry-pi-cluster-using-kubeadm-952bbda329c8)
 * Grégoire Jeanmart's [series](https://kauri.io/18-build-your-very-own-selfhosting-platform-with-r/1229f21044ef4bff8df35875d6803776/a) of eight articles.
 * [Raspbernetes](https://github.com/lucasteligioridis/raspbernetes)
-* []()
-* []()
-* []()
+
+## Networking
+
+* [Directing Kubernetes traffic with Traefik](https://opensource.com/article/20/3/kubernetes-traefik)
 
 ## Tools
 
