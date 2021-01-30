@@ -36,6 +36,16 @@ To see all the packages that went through dpkg, you can look at `/var/log/dpkg.l
 
 sudo ufw status
 
+### Discover router addres
+
+On macOS, you can determine the router’s ip with the following command:
+
+```shell
+netstat -rn | grep default
+```
+
+An example router IP is `192.168.1.1`.
+
 ## Security
 
 ### SSH
