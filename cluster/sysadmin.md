@@ -18,9 +18,9 @@ set mouse=a
 * [15 dpkg commands to Manage Debian based Linux Servers](https://www.linuxsysadmins.com/15-dpkg-commands-in-linux-servers/)
 
 ```
-sudo apt-get install apt-file
-sudo apt-file update
-apt-file list libssl-dev
+$ sudo apt-get install apt-file
+$ sudo apt-file update
+$ apt-file list libssl-dev
 ```
 The apt history is recorded in `/var/log/apt/history.log`
 To see all the packages that went through dpkg, you can look at `/var/log/dpkg.log`.
@@ -41,10 +41,16 @@ sudo ufw status
 On macOS, you can determine the router’s ip with the following command:
 
 ```shell
-netstat -rn | grep default
+$ netstat -rn | grep default
 ```
 
 An example router IP is `192.168.1.1`.
+
+### Get IP addresses handed out by `dnsmasq`
+
+```shell
+$ cat /var/lib/misc/dnsmasq.leases
+```
 
 ## Security
 
