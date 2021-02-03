@@ -6,14 +6,29 @@ In the following we walk through how to set up the RPI operating system (OS) and
 
 ### Preparing the SD cards
 
+Identify the SD cards:
+
+```shell
+$ diskutil list
+...
+/dev/disk2 (internal, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:     FDisk_partition_scheme                        *64.0 GB    disk2
+   1:                 DOS_FAT_32 NO_NAME                 64.0 GB    disk2s1
+```
+
 Open up the disk utility app and erase/format the SD cards using the MS-DOS (FAT) format:
+
+```shell
+$ sudo diskutil eraseDisk FAT32 RPNODE0 MBRFormat /dev/disk2
+```
 
 ### Install the Operating System on the SD cards
 
 Download a 64bit GNU/Linux OS, such as
 [Ubuntu 19.10](http://cdimage.ubuntu.com/releases/eoan/release/ubuntu-19.10.1-preinstalled-server-arm64+raspi3.img.xz) or
 [Ubuntu 20.04.1 LTS](https://cdimage.ubuntu.com/releases/20.04.1/release/ubuntu-20.04.1-preinstalled-server-arm64+raspi.img.xz)
-and extract the image like so:
+and extract the image:
 
 ```shell
 $ xz -d ubuntu-20.04.1-preinstalled-server-arm64+raspi.img.xz
@@ -23,35 +38,35 @@ You can read more about Ubuntu and Raspberry Pi on this
 dedicated [page](https://ubuntu.com/download/raspberry-pi).
 
 Now, following these [instructions for macOS](https://ubuntu.com/tutorials/create-an-ubuntu-image-for-a-raspberry-pi-on-macos#1-overview),
-flash the SD card (install the OS, make it bootable):
+flash the SD card (install the OS, make it bootable).
+
+First, unmount the SD card:
 
 ```shell
-# Identify the SD card
-diskutil list
-...
-/dev/disk2 (internal, physical):
-   #:                       TYPE NAME                    SIZE       IDENTIFIER
-   0:     FDisk_partition_scheme                        *64.0 GB    disk2
-   1:                 DOS_FAT_32 RPNODE0                 64.0 GB    disk2s1
-
-# Unmount the SD card:
 $ diskutil unmountdisk /dev/disk2
 Unmount of all volumes on disk2 was successful
+```
 
-# now, flash the SD card with the OS:
+Then, flash the SD card with the OS:
+
+```shell
 $ sudo dd if=ubuntu-20.04.1-preinstalled-server-arm64+raspi.img of=/dev/disk2 bs=8m
 1485+1 records in
 1485+1 records out
 3115115520 bytes transferred in 126.646778 secs (24596879 bytes/sec)
 ```
+
 If you get the `dd: bs: illegal numeric value` error,
 you might need to change `bs=8m` to `bs=8M`.
 
-```
-# flush cache (pending disk writes):
-$ sync /dev/disk2
+Finally, flush cache (pending disk writes):
 
-# eject SD card so you can insert into the Pi:
+```shell
+$ sync /dev/disk2
+```
+and eject SD card so you can insert into the Pi:
+
+```shell
 $ diskutil eject /dev/disk2
 Disk /dev/disk2 ejected
 ```
@@ -115,8 +130,8 @@ ethernets:
 ```yaml
 #cloud-config
 
-hostname: kube-node0
-#fqdn: kube-node0.example.com
+hostname: kube-node2
+#fqdn: kube-node2.example.com
 
 disable_root: true
 ssh_pwauth: no
